@@ -1,0 +1,45 @@
+# Data (large files — download via script)
+data/
+*.zip
+*.h5
+*.hdf5
+
+# Model checkpoints
+checkpoints/
+*.pt
+*.pth
+*.ckpt
+
+# Logs
+logs/
+runs/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Secrets
+.env
