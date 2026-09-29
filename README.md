@@ -21,7 +21,15 @@ This project fine-tunes (or linear-probes) Meta's DINOv2 Vision Transformer for 
 | VASC  | Vascular lesion | ~1% |
 | SCC   | Squamous cell carcinoma | ~2% |
 
-## Setup
+## Quick Start (Google Colab)
+
+The easiest way to run this project is on Google Colab with a free T4 GPU:
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/mtang4/isic-skin-lesion-classification/blob/main/notebooks/train_colab.ipynb)
+
+The notebook clones this repo, installs dependencies, downloads the data, and runs training — all core logic lives in `src/`, not the notebook.
+
+## Local Setup
 
 ```bash
 # Clone the repo
