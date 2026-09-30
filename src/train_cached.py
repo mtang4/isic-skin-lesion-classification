@@ -42,6 +42,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--warmup_epochs", type=int, default=3)
     parser.add_argument("--use_class_weights", action="store_true", default=True)
     parser.add_argument("--no_class_weights", action="store_true")
+    parser.add_argument(
+        "--weight_dampening", type=str, default="none",
+        choices=["none", "sqrt", "log"],
+        help="Dampen class weights: none=raw 1/freq, sqrt=sqrt(1/freq), log=log(1/freq)",
+    )
     parser.add_argument("--device", type=str, default=None)
     parser.add_argument("--run_name", type=str, default=None)
     parser.add_argument("--checkpoint_dir", type=str, default="./checkpoints")
@@ -71,11 +76,24 @@ def load_features(feature_dir: Path, device: torch.device) -> dict[str, TensorDa
     return datasets
 
 
-def compute_class_weights(dataset: TensorDataset) -> torch.Tensor:
-    """Inverse-frequency class weights from a TensorDataset."""
+def compute_class_weights(dataset: TensorDataset, dampening: str = "none") -> torch.Tensor:
+    """
+    Compute class weights from a TensorDataset.
+
+    Dampening controls how aggressively we correct for imbalance:
+      - "none": raw inverse frequency (1/count). Strong correction.
+      - "sqrt": sqrt of inverse frequency. Moderate correction.
+      - "log":  log of inverse frequency. Gentle correction.
+    """
     labels = dataset.tensors[1].numpy()
     counts = np.bincount(labels, minlength=len(CLASS_NAMES)).astype(np.float64)
     weights = 1.0 / counts
+
+    if dampening == "sqrt":
+        weights = np.sqrt(weights)
+    elif dampening == "log":
+        weights = np.log1p(weights)
+
     weights = weights / weights.sum() * len(CLASS_NAMES)
     return torch.tensor(weights, dtype=torch.float32)
 
@@ -184,11 +202,11 @@ def main():
     trainable_params = sum(p.numel() for p in model.parameters())
     print(f"\nClassifier: {trainable_params:,} parameters")
 
-    # Loss — weighted by inverse class frequency (no weighted sampler this time)
+    # Loss — optionally weighted by inverse class frequency
     class_weights = None
     if use_class_weights:
-        class_weights = compute_class_weights(datasets["train"]).to(device)
-        print(f"Class weights: {class_weights.cpu().numpy().round(3)}")
+        class_weights = compute_class_weights(datasets["train"], dampening=args.weight_dampening).to(device)
+        print(f"Class weights ({args.weight_dampening}): {class_weights.cpu().numpy().round(3)}")
 
     criterion = nn.CrossEntropyLoss(
         weight=class_weights, label_smoothing=args.label_smoothing
