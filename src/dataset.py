@@ -116,13 +116,13 @@ def create_dataloaders(
     batch_size: int = 64,
     image_size: int = 224,
     num_workers: int = 4,
-    use_weighted_sampler: bool = True,
 ) -> dict[str, DataLoader]:
     """
     Create train/val/test DataLoaders.
 
-    Uses a WeightedRandomSampler for training to handle class imbalance
-    (ISIC 2019 is heavily skewed toward NV class).
+    Class imbalance is handled via weighted cross-entropy loss in the
+    training script, NOT via oversampling here. Using both simultaneously
+    over-corrects and causes the model to massively over-predict minority classes.
     """
     train_dataset = ISICSkinLesionDataset(
         data_dir, split="train", transform=get_train_transforms(image_size)
@@ -134,24 +134,11 @@ def create_dataloaders(
         data_dir, split="test", transform=get_eval_transforms(image_size)
     )
 
-    # Weighted sampler to oversample minority classes during training
-    train_sampler = None
-    train_shuffle = True
-    if use_weighted_sampler:
-        class_counts = train_dataset.get_class_counts()
-        sample_weights = 1.0 / class_counts
-        weights = [sample_weights[label] for _, label in train_dataset.samples]
-        train_sampler = WeightedRandomSampler(
-            weights=weights, num_samples=len(weights), replacement=True
-        )
-        train_shuffle = False  # Sampler and shuffle are mutually exclusive
-
     loaders = {
         "train": DataLoader(
             train_dataset,
             batch_size=batch_size,
-            shuffle=train_shuffle,
-            sampler=train_sampler,
+            shuffle=True,
             num_workers=num_workers,
             pin_memory=True,
             drop_last=True,

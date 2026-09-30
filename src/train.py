@@ -190,7 +190,6 @@ def main():
         batch_size=batch_size,
         image_size=image_size,
         num_workers=num_workers,
-        use_weighted_sampler=True,
     )
 
     # Model
